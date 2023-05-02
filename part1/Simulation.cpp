@@ -3,10 +3,12 @@ PREPARED BY GIZEM KAYAR FOR COMPUTER GRAPHICS COURSE/NEW YORK UNIVERSITY
 YEAR: 2022
 */
 
+
 #include "Simulation.h"
 #define SIGN(x) (x >= 0 ? 1.0 : -1.0)
 #include <stdlib.h>
 #include "math3d.h"
+
 
 void Simulation::initializeParticles()
 {
@@ -18,17 +20,30 @@ void Simulation::initializeParticles()
 		Particle  particle;
 
 		//TO DO: Set particle positions and velocities using srand and world positions
-		vector3f position(5.0f, 5.0f, 5.0f);
-		particle.setPosition(position);
-		particle.setVelocity(vector3f(rand() / static_cast<float>(RAND_MAX), rand() / static_cast<float>(RAND_MAX), rand() / static_cast<float>(RAND_MAX)));
+		float particle_x = rand() % RAND_MAX;
+		float particle_y = rand() % RAND_MAX;
+		float particle_z = rand() % RAND_MAX;
+		vector3f pos;
+		pos.setUp(particle_x, particle_y, particle_z);
+		particle.setPosition(pos);
+		float v_x = rand() % RAND_MAX;
+		float v_y = rand() % RAND_MAX;
+		float v_z = rand() % RAND_MAX;
+		vector3f v;
+		v.setUp(v_x, v_y, v_z);
+		particle.setVelocity(v);
 
 		particle.clearForce();
 
 		//TO DO: Compute particle's old position for Verlet integration scheme
-		particle.setIntegration(Verlet);
+		//so we can neglect this part right? 
+
+		particle.setIntegration(Euler);
+		//particle.setIntegration(EulerCromer);
 		particle.setColor(vector3f(0, 0, 255));
 		particle.setPosition(vector3f(particle.getPosition().getX(),
 			(particle.getPosition().getY() + 0.1, 0), particle.getPosition().getZ()));
+
 
 		particleList.push_back(particle);
 
@@ -38,25 +53,38 @@ void Simulation::initializeParticles()
 void Simulation::simulateEuler(Particle* p)
 {
 	//TO DO
-	p->setPosition(p->getPosition() + p->getVelocity() * this->timestep);
-	p->setVelocity(p->getVelocity() + p->getForce() * this->timestep / this->commonMass);
+	vector3f pos_curr = p->getPosition();
+	vector3f v_curr = p->getVelocity();
+	float h = this->timestep;
+	vector3f force = p->getForce();
+	vector3f add_p = v_curr.operator*(h);
+	vector3f new_pos = pos_curr.operator+(add_p);
+	vector3f add_v = force.operator*(h * (1 / commonMass));
+	vector3f new_v = v_curr.operator+(add_v);
+	p->setPosition(new_pos);
+	p->setVelocity(new_v);
+	return;
+
+
 }
 
 void Simulation::simulateEulerCromer(Particle* p)
 {
 	//TO DO
-	p->setVelocity(p->getVelocity() + p->getForce() * this->timestep / this->commonMass);
-	p->setPosition(p->getPosition() + p->getVelocity() * this->timestep);
+	vector3f pos_curr = p->getPosition();
+	vector3f v_curr = p->getVelocity();
+	float h = this->timestep;
+	vector3f force = p->getForce();
+	vector3f add_v = force.operator*(h * (1 / commonMass));
+	vector3f new_v = v_curr.operator+(add_v);
+	vector3f add_p = new_v.operator*(h);
+	vector3f new_pos = pos_curr.operator+(add_p);
+	p->setPosition(new_pos);
+	p->setVelocity(new_v);
+	return;
 
 }
 
-void Simulation::simulateVerlet(Particle* p)
-{
-	//TO DO
-	p->setPosition(p->getPosition() + p->getVelocity() * this->timestep + p->getForce() * (this->timestep * this->timestep) / (2 * this->commonMass));
-	p->setVelocity(p->getVelocity() + p->getForce() * this->timestep / this->commonMass);
-
-}
 
 void Simulation::clearForces()
 {
@@ -105,14 +133,17 @@ void Simulation::solveWorldCollision()
 void Simulation::computeSystemEnergies()
 {
 	//TO DO
-	this->kinEn = 0.0f;
-	this->potEn = 0.0f;
-	vector3f gravity(0.0f, -9.81f, 0.0f);
-	for (int i = 0; i < noPt; i++)
-	{
+	for (int i = 0; i < noPt; i++) {
 		Particle p = particleList[i];
-		this->kinEn += (this->commonMass * p.getVelocity().lengthSquare()) / 2;
-		this->potEn += (9.81f * (this->commonMass) * (p.getPosition().getY() + this->halfWorld.getY()));
+		float h = p.getPosition().getY() + halfWorld.getY();
+		float kinetic;
+		float potential;
+		kinetic = (1 / 2) * (commonMass) * (p.getVelocity().lengthSquare());
+		potential = 9.8f * commonMass * h;
+		this->kinEn += kinetic;
+		this->potEn += potential;
 	}
+	return;
+
 
 }
