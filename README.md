@@ -4,6 +4,7 @@ Name: Scott Fan
 
 I used visual studio community 2022 for this assignment. 
 All environments are set according to HW3-simulation.pdf.
+Code on Github is the final version.
 
 ### How to run
 
